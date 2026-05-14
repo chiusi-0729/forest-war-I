@@ -408,13 +408,18 @@ export function getBestMoveAI(state: GameState): { from: { x: number, y: number 
 
     if (hasDenThreat) {
       if (targetPiece?.player === Player.B && denThreats.some(threat => threat.x === m.to.x && threat.y === m.to.y)) {
-        score += 5000;
+        score += 7000;
       }
       if (isMovingToDenArea) {
-        score += 900;
+        score += 1800;
       }
       if (isMovingFromDenArea && !isMovingToDenArea) {
-        score -= 600;
+        score -= 1200;
+      }
+      const threatDistanceBefore = Math.min(...denThreats.map(threat => manhattan(m.from, [threat.x, threat.y])));
+      const threatDistanceAfter = Math.min(...denThreats.map(threat => manhattan(m.to, [threat.x, threat.y])));
+      if (threatDistanceAfter < threatDistanceBefore) {
+        score += 300; // move closer to contest threat if already defending
       }
     } else {
       if (isMovingToDenArea) {
