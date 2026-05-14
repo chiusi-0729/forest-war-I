@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(({mode}) => {
   return {
-    base: './',
+    base: '/forest-war-I/',
     plugins: [react(), tailwindcss()],
     optimizeDeps: {
       exclude: ['motion/react'],
