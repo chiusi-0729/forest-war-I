@@ -166,6 +166,11 @@ export function isValidMove(
 }
 
 function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid: boolean; reason?: string } {
+  // Cannot move into own trap.
+  if (targetCell.type === CellType.TRAP && targetCell.owner === attacker.player) {
+    return { valid: false, reason: 'Cannot move into own trap' };
+  }
+
   // If stepping into enemy trap, it's allowed but will result in capture in performMove
   if (targetCell.type === CellType.TRAP && targetCell.owner !== attacker.player) {
     return { valid: true };
