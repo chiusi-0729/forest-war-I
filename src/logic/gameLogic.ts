@@ -334,11 +334,37 @@ export function getAllLegalMoves(state: GameState, player: Player): { from: { x:
   return moves;
 }
 
+function manhattan(a: { x: number; y: number }, b: number[]) {
+  return Math.abs(a.x - b[0]) + Math.abs(a.y - b[1]);
+}
+
+function getVisibleEnemyPieces(state: GameState) {
+  const pieces: { x: number; y: number; piece: Piece }[] = [];
+  for (let x = 0; x < ROWS; x++) {
+    for (let y = 0; y < COLS; y++) {
+      const cell = state.board[x][y];
+      if (cell.piece?.player === Player.B && cell.piece.isRevealed) {
+        pieces.push({ x, y, piece: cell.piece });
+      }
+    }
+  }
+  return pieces;
+}
+
+function isAdjacentToDen(pos: { x: number; y: number }, den: number[]) {
+  return Math.abs(pos.x - den[0]) + Math.abs(pos.y - den[1]) === 1;
+}
+
 export function getBestMoveAI(state: GameState): { from: { x: number, y: number }, to: { x: number, y: number } } | null {
   const moves = getAllLegalMoves(state, Player.A);
   if (moves.length === 0) return null;
 
-  const den = DENS[Player.B];
+  const aiDen = DENS[Player.A];
+  const opponentDen = DENS[Player.B];
+  const visibleEnemyPieces = getVisibleEnemyPieces(state);
+  const denThreats = visibleEnemyPieces.filter(enemy => manhattan(enemy, aiDen) <= 2);
+  const hasDenThreat = denThreats.length > 0;
+
   let bestScore = -Infinity;
   let candidates: typeof moves = [];
 
@@ -347,28 +373,62 @@ export function getBestMoveAI(state: GameState): { from: { x: number, y: number 
     const fromPiece = state.board[m.from.x][m.from.y].piece!;
     const targetCell = state.board[m.to.x][m.to.y];
     const targetPiece = targetCell.piece;
+    const isMovingFromDenArea = isAdjacentToDen(m.from, aiDen);
+    const isMovingToDenArea = isAdjacentToDen(m.to, aiDen);
 
     if (targetPiece) {
-      score += (targetPiece.level * 100) + 100;
-      if (fromPiece.type === AnimalType.RAT && targetPiece.type === AnimalType.ELEPHANT) score += 500;
-      if (!targetPiece.isRevealed) score += 200;
+      if (targetPiece.player === Player.B) {
+        if (targetPiece.isRevealed) {
+          score += 200 + targetPiece.level * 120;
+          if (fromPiece.type === AnimalType.RAT && targetPiece.type === AnimalType.ELEPHANT) {
+            score += 600;
+          }
+        } else {
+          score += 100; // probing unknown enemy
+          score += Math.max(0, 4 - fromPiece.level) * 50; // weaker piece preferred to probe unknowns
+          if (fromPiece.level > 5) score -= 200;
+        }
+      } else {
+        score += 50; // capturing own piece won't happen due to validation
+      }
     }
 
-    const d1 = Math.abs(m.from.x - den[0]) + Math.abs(m.from.y - den[1]);
-    const d2 = Math.abs(m.to.x - den[0]) + Math.abs(m.to.y - den[1]);
-    score += (d1 - d2) * 20;
+    if (targetCell.type === CellType.DEN && targetCell.owner === Player.B) {
+      score += 22000;
+    }
 
-    if (targetCell.type === CellType.DEN && targetCell.owner === Player.B) score += 20000;
-    
-    // AI avoids traps it knows about (revealed or its own)
+    const distToOpponentDenBefore = Math.abs(m.from.x - opponentDen[0]) + Math.abs(m.from.y - opponentDen[1]);
+    const distToOpponentDenAfter = Math.abs(m.to.x - opponentDen[0]) + Math.abs(m.to.y - opponentDen[1]);
+    score += (distToOpponentDenBefore - distToOpponentDenAfter) * 30;
+
+    if (hasDenThreat) {
+      if (targetPiece?.player === Player.B && denThreats.some(threat => threat.x === m.to.x && threat.y === m.to.y)) {
+        score += 5000;
+      }
+      if (isMovingToDenArea) {
+        score += 900;
+      }
+      if (isMovingFromDenArea && !isMovingToDenArea) {
+        score -= 600;
+      }
+    } else {
+      if (isMovingToDenArea) {
+        score += 250;
+      }
+    }
+
     const knownTrap = targetCell.type === CellType.TRAP && (targetCell.isTrapRevealed || targetCell.owner === Player.A);
     if (knownTrap) {
       if (targetCell.owner === Player.B) {
-        score -= 5000; // Large penalty for known enemy trap (certain death)
+        score -= 5200;
       } else {
-        // Own trap is fine, but maybe slightly less ideal than normal terrain?
-        score += 50; 
+        score += 40;
       }
+    }
+
+    const hiddenEnemyNearby = state.board.flat().some(cell => cell.piece?.player === Player.B && !cell.piece.isRevealed);
+    if (hiddenEnemyNearby && !targetPiece && targetCell.type !== CellType.RIVER) {
+      if (fromPiece.level <= 3) score += 40; // use weaker pieces to probe open ground
     }
 
     if (score > bestScore) {
