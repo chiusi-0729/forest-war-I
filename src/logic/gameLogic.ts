@@ -193,8 +193,7 @@ function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid:
   if (attacker.type === AnimalType.RAT && targetPiece.type === AnimalType.ELEPHANT && tLevel > 0) return { valid: true };
   if (attacker.type === AnimalType.ELEPHANT && targetPiece.type === AnimalType.RAT) return { valid: false, reason: '象不能吃鼠' };
 
-  if (attacker.level >= tLevel) return { valid: true };
-  return { valid: false, reason: '等級不足' };
+  return { valid: true };
 }
 
 function countPlayerPieces(board: Cell[][], player: Player): number {
