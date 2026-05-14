@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
@@ -37,58 +37,38 @@ export default function App() {
     setMessage('對戰開始！紅方優先。');
   }, [gameState]);
 
-  const aiThinkingRef = useRef(false);
-
   // AI Turn Handling in Battle
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     if (
       gameState.status === GameStatus.BATTLE && 
       gameState.currentPlayer === Player.A && 
       !gameState.winner && 
-      !aiThinkingRef.current
+      !isAiThinking
     ) {
-      console.log('AI Turn logic triggered');
-      aiThinkingRef.current = true;
       setIsAiThinking(true);
       
-      timeoutId = setTimeout(() => {
-        const stateForAi = gameState;
-        console.log('--- AI Thinking Start ---');
-        const aiMove = getBestMoveAI(stateForAi);
+      const timeoutId = setTimeout(() => {
+        const aiMove = getBestMoveAI(gameState);
         
         if (aiMove) {
-          console.log('AI selected move:', aiMove);
           setGameState(prev => {
-            if (prev.currentPlayer !== Player.A || prev.status !== GameStatus.BATTLE) {
-              console.log('AI Skip: turn or status changed');
-              return prev;
-            }
             const nextState = performMove(prev, aiMove.from, aiMove.to);
             if (nextState === prev) {
-              console.warn('AI FATAL: AI attempted invalid move!', aiMove);
-              // Fallback: If AI is stuck with an invalid move, try to force lose to avoid infinite loop
+              console.warn('AI attempted invalid move!', aiMove);
               return { ...prev, winner: Player.B, status: GameStatus.FINISHED };
             }
             return nextState;
           });
         } else {
-          console.log('AI Conclusion: No moves available, Surrendering.');
           setGameState(prev => ({ ...prev, winner: Player.B, status: GameStatus.FINISHED }));
         }
         
-        aiThinkingRef.current = false;
         setIsAiThinking(false);
-        console.log('--- AI Thinking End ---');
-      }, 800);
-    }
+      }, 500);
 
-    return () => {
-      // Only clear if the turn changed or game ended, but be careful with the dependency array
-      // Actually, we want to stay stable if only isAiThinking changed
-    };
-  }, [gameState.currentPlayer, gameState.status, gameState.winner]); // Remove isAiThinking from dependencies
+      return () => clearTimeout(timeoutId);
+    }
+  }, [gameState, isAiThinking]);
 
   const handleCellClick = useCallback((x: number, y: number) => {
     if (gameState.status !== GameStatus.BATTLE || gameState.winner || isAiThinking) return;

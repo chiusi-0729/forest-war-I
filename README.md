@@ -10,11 +10,14 @@ View your app in AI Studio: https://ai.studio/apps/c144c71d-548e-4b55-a578-91350
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:**  Node.js 18+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Run the app:
+   ```bash
+   npm run dev
+   ```
+   Open http://localhost:3000 in your browser
