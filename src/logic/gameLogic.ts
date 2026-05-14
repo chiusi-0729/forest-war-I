@@ -168,7 +168,7 @@ export function isValidMove(
 function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid: boolean; reason?: string } {
   // Cannot move into own trap.
   if (targetCell.type === CellType.TRAP && targetCell.owner === attacker.player) {
-    return { valid: false, reason: 'Cannot move into own trap' };
+    return { valid: false, reason: '不能移動到自己的陷阱' };
   }
 
   // If stepping into enemy trap, it's allowed but will result in capture in performMove
@@ -179,10 +179,10 @@ function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid:
   const targetPiece = targetCell.piece;
   if (!targetPiece) return { valid: true };
 
-  if (targetPiece.player === attacker.player) return { valid: false, reason: 'Own piece blocked' };
+  if (targetPiece.player === attacker.player) return { valid: false, reason: '己方棋子阻擋' };
 
   if (fromCell.type === CellType.RIVER && targetCell.type !== CellType.RIVER) {
-    return { valid: false, reason: 'Rat in water cannot attack land' };
+    return { valid: false, reason: '水中鼠不能攻擊陸地' };
   }
 
   let tLevel = targetPiece.level;
@@ -191,10 +191,10 @@ function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid:
   if (targetCell.type === CellType.TRAP && targetCell.owner !== targetPiece.player) tLevel = 0;
 
   if (attacker.type === AnimalType.RAT && targetPiece.type === AnimalType.ELEPHANT && tLevel > 0) return { valid: true };
-  if (attacker.type === AnimalType.ELEPHANT && targetPiece.type === AnimalType.RAT) return { valid: false, reason: 'Elephant cannot eat rat' };
+  if (attacker.type === AnimalType.ELEPHANT && targetPiece.type === AnimalType.RAT) return { valid: false, reason: '象不能吃鼠' };
 
   if (attacker.level >= tLevel) return { valid: true };
-  return { valid: false, reason: 'Level too low' };
+  return { valid: false, reason: '等級不足' };
 }
 
 function countPlayerPieces(board: Cell[][], player: Player): number {
@@ -215,8 +215,9 @@ export function performMove(state: GameState, from: { x: number; y: number }, to
   if (targetCell.type === CellType.TRAP && targetCell.owner !== piece.player) {
     newState.capturedPieces[piece.player].push(piece);
     newState.board[from.x][from.y].piece = null;
-    
-    // Trap disappears after use
+
+    // Clear the trap cell completely so it becomes an empty normal square
+    targetCell.piece = null;
     targetCell.type = CellType.NORMAL;
     targetCell.owner = undefined;
     targetCell.isTrapRevealed = undefined;
