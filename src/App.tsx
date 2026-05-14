@@ -199,6 +199,9 @@ export default function App() {
                   <span className="animate-spin duration-[2000ms]">○</span> AI 正在規劃戰術...
                 </div>
               )}
+              <p className="text-xs leading-relaxed text-slate-400 mt-3">
+                走到對方獸穴即可獲勝。若雙方除了陷阱以外棋子全數陣亡且都未走到對方獸穴，則判為平手。
+              </p>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl backdrop-blur-sm divide-y divide-slate-800">
@@ -279,7 +282,8 @@ export default function App() {
                       ${shouldSeeTrap ? 'ring-1 ring-amber-500/30 ring-inset' : ''}
                     `}
                   >
-                    {isDen && <div className={`w-2 h-2 rounded-full absolute top-1 ${cell.owner === Player.A ? 'bg-blue-500/50' : 'bg-red-500/50'}`} />}
+                    {isDen && <div className={`w-full absolute top-1 text-[8px] text-yellow-200 font-bold uppercase tracking-[0.15em] text-center ${cell.owner === Player.A ? 'text-blue-200' : 'text-red-200'}`}>獸穴</div>}
+                    {isDen && <div className={`w-2 h-2 rounded-full absolute top-1 right-1 ${cell.owner === Player.A ? 'bg-blue-500/50' : 'bg-red-500/50'}`} />}
                     
                     {shouldSeeTrap && <div className="absolute inset-0 flex items-center justify-center opacity-20"><span className="text-[10px] md:text-sm text-amber-500 font-bold">阱</span></div>}
 
@@ -330,12 +334,16 @@ export default function App() {
       </div>
 
       <AnimatePresence>
-        {gameState.winner && (
+        {(gameState.status === GameStatus.FINISHED) && (
           <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
             <motion.div className="bg-slate-900 border border-slate-700 p-12 rounded-[2.5rem] shadow-2xl flex flex-col items-center text-center">
               <Trophy size={60} className="text-yellow-500 mb-4" />
-              <h2 className="text-4xl font-black text-white mb-4 uppercase italic">勝利！</h2>
-              <p className="text-slate-400 mb-8">{gameState.winner === Player.B ? '紅方獲勝' : '藍方獲勝'}</p>
+              <h2 className="text-4xl font-black text-white mb-4 uppercase italic">{gameState.winner ? '勝利！' : '平手'}</h2>
+              <p className="text-slate-400 mb-8">
+                {gameState.winner
+                  ? (gameState.winner === Player.B ? '紅方獲勝' : '藍方獲勝')
+                  : '雙方未能走到對方獸穴，判為平手。'}
+              </p>
               <button onClick={resetGame} className="px-12 py-4 bg-red-600 text-white font-black rounded-2xl">重新開始</button>
             </motion.div>
           </motion.div>

@@ -43,6 +43,7 @@ export function initGame(): GameState {
 }
 
 export function placePiece(state: GameState, player: Player, x: number, y: number, item: AnimalType | 'trap'): GameState | { error: string } {
+  if (state.status !== GameStatus.SETUP) return { error: 'Cannot place after setup' };
   if (state.inventory[player][item] <= 0) return { error: 'Inventory empty' };
   
   // Zone checks
@@ -75,6 +76,8 @@ export function placePiece(state: GameState, player: Player, x: number, y: numbe
 }
 
 export function removePiece(state: GameState, x: number, y: number): GameState {
+  if (state.status !== GameStatus.SETUP) return state;
+
   const newState = JSON.parse(JSON.stringify(state)) as GameState;
   const cell = newState.board[x][y];
   
@@ -189,6 +192,10 @@ function canCapture(attacker: Piece, targetCell: Cell, fromCell: Cell): { valid:
   return { valid: false, reason: 'Level too low' };
 }
 
+function countPlayerPieces(board: Cell[][], player: Player): number {
+  return board.flat().filter(cell => cell.piece?.player === player).length;
+}
+
 export function performMove(state: GameState, from: { x: number; y: number }, to: { x: number; y: number }): GameState {
   const newState = JSON.parse(JSON.stringify(state)) as GameState;
   const piece = newState.board[from.x][from.y].piece;
@@ -263,6 +270,15 @@ export function performMove(state: GameState, from: { x: number; y: number }, to
   }
 
   newState.board[from.x][from.y].piece = null;
+
+  const hasPiecesA = countPlayerPieces(newState.board, Player.A);
+  const hasPiecesB = countPlayerPieces(newState.board, Player.B);
+  if (!newState.winner && hasPiecesA === 0 && hasPiecesB === 0) {
+    newState.history.push('雙方棋子除陷阱外全數陣亡，判平手');
+    newState.status = GameStatus.FINISHED;
+    return newState;
+  }
+
   // Win by Den capture
   if (targetCell.type === CellType.DEN && targetCell.owner !== piece.player) {
     newState.winner = piece.player;
@@ -272,7 +288,7 @@ export function performMove(state: GameState, from: { x: number; y: number }, to
   const opponent = piece.player === Player.A ? Player.B : Player.A;
   
   // Win by elimination
-  const hasOpponentPieces = newState.board.flat().some(cell => cell.piece?.player === opponent);
+  const hasOpponentPieces = countPlayerPieces(newState.board, opponent) > 0;
   if (!hasOpponentPieces) {
     newState.winner = piece.player;
     newState.status = GameStatus.FINISHED;

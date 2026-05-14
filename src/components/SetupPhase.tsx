@@ -31,7 +31,8 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({
         </h2>
         <p className="text-slate-400 text-sm max-w-md">
           請在棋盤下方三列 (第 6-8 列) 放置你的 16 枚棋子與 3 個陷阱。
-          對手看不見你的佈局，陷阱預設是隱藏的，直到有人掉進去。
+          獸穴位置會用明顯標示，走到對方獸穴即獲勝。
+          若雙方除了陷阱以外棋子全數陣亡且都未走到獸穴，則判為平手。
         </p>
       </div>
 
@@ -112,7 +113,8 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({
       <div className="grid grid-cols-7 gap-1 md:gap-2 bg-slate-950 p-2 md:p-3 rounded-xl border border-slate-800 shadow-2xl overflow-auto">
         {board.map((row, x) => (
           row.map((cell, y) => {
-            const isSelectable = x >= 6;
+            const isDen = cell.type === 'den';
+            const isSelectable = x >= 6 && !isDen;
             const piece = cell.piece;
             const isTrap = cell.type === 'trap' && cell.owner === Player.B;
             return (
@@ -128,8 +130,8 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({
                 }}
                 className={`
                   w-10 h-10 md:w-12 md:h-12 rounded-sm relative flex items-center justify-center cursor-pointer transition-all
-                  ${x >= 6 ? 'bg-red-950/10 hover:bg-red-900/30 ring-1 ring-inset ring-red-500/10' : 'bg-slate-900/10 opacity-30'}
-                  ${cell.type === 'den' ? 'ring-2 ring-gold shadow-inner' : ''}
+                  ${x >= 6 ? 'bg-red-950/20 border-2 border-red-500/25 hover:bg-red-900/40 ring-1 ring-red-500/20' : 'bg-slate-900/10 opacity-30 cursor-not-allowed'}
+                  ${cell.type === 'den' ? 'ring-2 ring-yellow-400 shadow-inner bg-yellow-500/10' : ''}
                 `}
               >
                 {piece && (
@@ -140,6 +142,11 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({
                   >
                     {ANIMAL_NAMES[piece.type]}
                   </motion.div>
+                )}
+                {isDen && (
+                  <div className="absolute top-1 left-1 right-1 text-[8px] text-yellow-200 font-bold uppercase tracking-[0.15em] text-center">
+                    獸穴
+                  </div>
                 )}
                 {isTrap && (
                   <motion.div 
